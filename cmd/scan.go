@@ -48,7 +48,7 @@ func syncScanOpts() {
 	scanOpts.Banner = viper.GetBool("scan.banner")
 	scanOpts.Stealth = viper.GetBool("scan.stealth") // I accidentally said Stwealth instead of Stealth, owo
 	scanOpts.RateLimit = viper.GetInt("scan.rate")
-	scanOpts.Workers = viper.GetBool("scan.workers")
+	scanOpts.Workers = viper.GetInt("scan.workers")
 	scanOpts.Aggressive = viper.GetBool("scan.aggressive")
 	scanOpts.OSFp = viper.GetBool("scan.os-fp")
 	scanOpts.Export = viper.GetString("scan.export")

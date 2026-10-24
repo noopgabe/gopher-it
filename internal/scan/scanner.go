@@ -8,13 +8,16 @@ package scan
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/noopgabe/gopher-it/internal/output"
@@ -240,4 +243,173 @@ func Run(ctx context.Context, opts Options, pr output.Printer) error {
 		mu      sync.Mutex
 		results = []Result{}
 	)
+	for i := 0; i < opts.Workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := range jobs {
+				if ctx.Err() != nil {
+					return
+				}
+				if tokens != nil {
+					select {
+					case <-ctx.Done():
+						return
+					case <-tokens:
+					}
+				}
+				r := probe(j.host, j.port, j.proto, opts)
+				if r.State != "" {
+					mu.Lock()
+					results = append(results, r)
+					mu.Unlock()
+				}
+			}
+		}()
+	}
+
+	protos := make([]string, 0, 2)
+	if opts.TCP {
+		protos = append(protos, "tcp")
+	}
+	if opts.UDP {
+		protos = append(protos, "udp")
+	}
+	var prodErr error
+producing:
+	for _, h := range targets {
+		for _, p := range ports {
+			for _, proto := range protos {
+				select {
+				case <-ctx.Done():
+					prodErr = ctx.Err()
+					break producing
+				case jobs <- job{host: h, port: p, proto: proto}:
+				}
+			}
+		}
+	}
+	close(jobs)
+	wg.Wait()
+	if prodErr != nil {
+		return prodErr
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].Host != results[j].Host {
+			return results[i].Host < results[j].Host
+		}
+		if results[i].Port < results[j].Port {
+			return results[i].Port < results[j].Port
+		}
+		return results[i].Proto < results[j].Proto
+	})
+
+	rows := make([][]string, 0, len(results))
+	for _, r := range results {
+		rows = append(rows, []string{r.Host, strconv.Itoa(r.Port), r.Proto, r.State, r.Banner})
+	}
+	pr.PrintTable([]string{"HOST", "PORT", "PROTO", "STATE", "BANNER"}, rows)
+	if pr.JSON || pr.YAML {
+		pr.PrintAny(results)
+	}
+	if opts.Export != "" {
+		if err := exportJSON(opts.Export, results); err != nil {
+			return fmt.Errorf("export: %w", err)
+		}
+	}
+	if len(results) == 0 {
+		return errors.New("No open ports found.")
+	}
+	return nil
+}
+
+func exportJSON(path string, results []Result) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	return enc.Encode(results)
+}
+
+func probe(host string, port int, proto string, opts Options) Result {
+	r := Result{Host: host, Port: port, Proto: proto}
+	addr := net.JoinHostPort(host, strconv.Itoa(port))
+	if proto == "tcp" {
+		conn, err := net.DialTimeout("tcp", addr, opts.Timeout)
+		if err != nil {
+			return Result{}
+		}
+		defer conn.Close()
+		r.State = "open"
+		if opts.Banner {
+			conn.SetReadDeadline(time.Now().Add(time.Second))
+			buf := make([]byte, maxBannerLen)
+			n, _ := conn.Read(buf)
+			if n > 0 {
+				r.Banner = sanitizeBanner(buf[:n])
+			}
+		}
+		r.Service = guessService(port)
+		return r
+	}
+	// a connected UDP socket surfaces ICMP port-unreachable as ECONNREFUSED
+	// on r/w. timeouts mean they're opened ORRRR filtered.
+	conn, err := net.DialTimeout("udp", addr, opts.Timeout)
+	if err != nil {
+		return Result{}
+	}
+	defer conn.Close()
+	conn.SetDeadline(time.Now().Add(opts.Timeout))
+	_, _ = conn.Write([]byte("\n"))
+	buf := make([]byte, maxBannerLen)
+	n, err := conn.Read(buf)
+	if err == nil && n > 0 {
+		r.State = "open"
+		r.Banner = sanitizeBanner(buf[:n])
+		return r
+	}
+	if isConnRefused(err) {
+		r.State = "closed"
+		return r
+	}
+	r.State = "open|filtered"
+	return r
+}
+
+func isConnRefused(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, syscall.ECONNREFUSED) {
+		return true
+	}
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		return errors.Is(opErr.Err, syscall.ECONNREFUSED)
+	}
+	return false
+}
+
+// sanitizeBanner strips control characters so hostile banners
+// can't inject terminal escape sequences and it also caps the length
+func sanitizeBanner(b []byte) string {
+	out := make([]byte, 0, len(b))
+	for _, c := range b {
+		if c == '\t' || (c >= 0x20 && c < 0x7f) {
+			out = append(out, c)
+		}
+	}
+	if len(out) > maxBannerLen {
+		out = out[:maxBannerLen]
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func guessService(p int) string {
+	m := map[int]string{22: "SSH", 80: "HTTP", 443: "HTTPS", 3306: "MySQL", 5432: "PostgreSQL", 6379: "Redis"}
+	return m[p]
 }
