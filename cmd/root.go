@@ -31,8 +31,17 @@ var rootCmd = &cobra.Command{
 	Short: "Gopher-IT is a CLI tool for networking tasks, status checks, and also incredibly stupid things.",
 	Long:  "Gopher-IT is an all-in-one CLI tool for basic networking, status checks, and advanced user commands. It is for everyone, from the humble beginner to Jeff in IT, who hasn't seen the light of day.",
 	Run: func(cmd *cobra.Command, args []string) {
+		art := `
+   __________  ____  __  ____________        _ __ 
+  / ____/ __ \/ __ \/ / / / ____/ __ \      (_) /_
+ / / __/ / / / /_/ / /_/ / __/ / /_/ /_____/ / __/
+/ /_/ / /_/ / ____/ __  / /___/ _, _/_____/ / /_  
+\____/\____/_/   /_/ /_/_____/_/ |_|     /_/\__/  
+
+Welcome to Gopher-IT! Please use a subcommand (scan, trace, watch, secure, doctor, install, update, completion), or use --help for a more detailed guide.
+`
 		if len(args) == 0 {
-			fmt.Println("Welcome to Gopher-IT! Please use a subcoommand (scan, trace, watch, secure, doctor, install, update, completion), or use --help to get a more detailed guide.")
+			fmt.Println(art)
 		}
 	},
 }
@@ -110,7 +119,7 @@ func IsSudo() bool    { return sudo }
 func IsQuiet() bool   { return quiet }
 func IsVerbose() bool { return verbose }
 
-const buffoonWarning = `You have passed the --i-am-a-buffoonj flag, which allows you to run dangerous features not usually allowed. 
+const buffoonWarning = `You have passed the --i-am-a-buffoon flag, which allows you to run dangerous features not usually allowed. 
 By running this, you acknowledge this is not a smart idea (unless you know what you are doing), and you will NOT recieve support for this unless this blew up your computer. 
 Please be careful. If you do not know what you are doing, it is best to hit Ctrl+C NOW and run the command with sane defaults.`
 

@@ -18,7 +18,7 @@ var scanCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		syncScanOpts()
 		if scanOpts.Aggressive {
-			if err := requireBuffoon("Agressive scan"); err != nil {
+			if err := requireBuffoon("Aggressive scan"); err != nil {
 				return err
 			}
 		}
