@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gopher-it/gopher-it/internal/output"
+	"github.com/noopgabe/gopher-it/internal/output"
 )
 
 func TestParsePorts(t *testing.T) {
