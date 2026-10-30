@@ -129,7 +129,7 @@ var buffoonWarnOnce sync.Once
 // My reasoning here is that it does work, technically. However, they are flammable as hell, and sometimes are stupidly dangerous.
 func requireBuffoon(action string) error {
 	if !buffoon {
-		return fmt.Errorf("You have attempted to run a dangerous command (%s) without passing the --i-am-a-buffoon flag. You can either pass it, or run the command normally. If you aren't sure, just run it normally.")
+		return fmt.Errorf("You have attempted to run a dangerous command (%s) without passing the --i-am-a-buffoon flag. You can either pass it, or run the command normally. If you aren't sure, just run it normally.", action)
 	}
 	buffoonWarnOnce.Do(func() {
 		fmt.Fprintln(os.Stderr, buffoonWarning)
