@@ -73,7 +73,13 @@ func init() {
 			if replayPcap == "" {
 				return fmt.Errorf("--pcap is required for replay to work.")
 			}
-			return trace.ReplayPcap(cmd.Context(), replayPcap, replayIface)
+
+			opts := trace.Options{
+				ImportPcap: replayPcap,
+				Iface:      replayIface,
+			}
+
+			return trace.ReplayPcap(cmd.Context(), opts)
 		},
 	}
 	inj.Flags().StringVar(&replayPcap, "pcap", "", "PCAP file to replay")

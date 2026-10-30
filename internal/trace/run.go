@@ -29,7 +29,7 @@ func ImportPcap(path string, opts Options) error {
 	if err != nil {
 		return err
 	}
-	linkType := reader.LinkType(0)
+	linkType := reader.LinkType()
 	n := 0
 	for {
 		data, ci, err := reader.ReadPacketData()
@@ -43,7 +43,7 @@ func ImportPcap(path string, opts Options) error {
 		packet := gopacket.NewPacket(data, linkType, gopacket.Default)
 		fmt.Println(DecodePacket(packet))
 		n++
-		if n >= limit {
+		if n >= opts.Limit {
 			break
 		}
 	}

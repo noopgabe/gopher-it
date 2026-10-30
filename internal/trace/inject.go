@@ -14,7 +14,7 @@ import (
 )
 
 func ReplayPcap(ctx context.Context, opts Options) error {
-	f, err := os.Open(path)
+	f, err := os.Open(opts.ImportPcap)
 	if err != nil {
 		return err
 	}
@@ -28,8 +28,8 @@ func ReplayPcap(ctx context.Context, opts Options) error {
 		return err
 	}
 	defer syscall.Close(fd)
-	if iface != "" && iface != "any" {
-		ifi, err := net.InterfaceByName(iface)
+	if opts.Iface != "" && opts.Iface != "any" {
+		ifi, err := net.InterfaceByName(opts.Iface)
 		if err != nil {
 			return err
 		}

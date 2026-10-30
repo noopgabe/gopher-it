@@ -92,6 +92,7 @@ type cpuKey struct {
 type checker struct {
 	opts     Options
 	host     string
+	list     func() ([]procInfo, error)
 	cpuBase  map[cpuKey]float64
 	cpuStamp map[cpuKey]time.Time
 }
@@ -100,6 +101,7 @@ func newChecker(opts Options) *checker {
 	return &checker{
 		opts:     opts,
 		host:     hostname(),
+		list:     listProcesses,
 		cpuBase:  map[cpuKey]float64{},
 		cpuStamp: map[cpuKey]time.Time{},
 	}
@@ -110,7 +112,7 @@ func (c *checker) alert(level, msg string) {
 }
 
 func (c *checker) checkOnce() {
-	procs, err := listProcesses()
+	procs, err := c.list()
 	if err != nil {
 		c.alert("Critical", "cannot list processes: "+err.Error())
 		return

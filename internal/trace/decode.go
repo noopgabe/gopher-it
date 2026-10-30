@@ -48,7 +48,7 @@ func DecodePacket(p gopacket.Packet) string {
 	}
 	if udp := p.Layer(layers.LayerTypeUDP); udp != nil {
 		u := udp.(*layers.UDP)
-		info = fmt.Sprintf("Sport=%D Dport=%d", u.SrcPort, u.DstPort)
+		info = fmt.Sprintf("Sport=%d Dport=%d", u.SrcPort, u.DstPort)
 	}
 	return fmt.Sprintf("%s -> %s %s %s", src, dst, proto, info)
 }

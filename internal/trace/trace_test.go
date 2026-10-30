@@ -18,7 +18,7 @@ func buildTCPPacket(t *testing.T, syn bool) gopacket.Packet {
 	t.Helper()
 	eth := &layers.Ethernet{
 		SrcMAC:       net.HardwareAddr{0x00, 0x11, 0x22, 0x33, 0x44, 0x55},
-		DstMac:       net.HardwareAddr{0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb},
+		DstMAC:       net.HardwareAddr{0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb},
 		EthernetType: layers.EthernetTypeIPv4,
 	}
 	ip := &layers.IPv4{
@@ -75,7 +75,7 @@ func TestWriteImportRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.pcap")
 	pkt := buildTCPPacket(t, true)
-	pkt.Metadata().captrueInfo = gopacket.CaptureInfo{Timestamp: pkt.Metadata().Timestamp, CaptureLength: len(pkt.Data()), Length: len(pkt.Data())} // very organized
+	pkt.Metadata().CaptureInfo = gopacket.CaptureInfo{Timestamp: pkt.Metadata().Timestamp, CaptureLength: len(pkt.Data()), Length: len(pkt.Data())} // very organized
 	if pkt.Metadata().Timestamp.IsZero() {
 		pkt.Metadata().CaptureInfo.Timestamp = time.Now()
 	}
