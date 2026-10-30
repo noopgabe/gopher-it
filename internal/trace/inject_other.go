@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func ReplayPcap(ctx context.Context, path, iface string) error {
+func ReplayPcap(ctx context.Context, opts Options) error {
 	return fmt.Errorf("Packet injection requires Linux.")
 }
 
